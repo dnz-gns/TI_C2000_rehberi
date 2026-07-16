@@ -1,0 +1,39 @@
+#include "f28x_project.h"
+
+void initPWM1(void);
+
+void main(void){
+
+    InitSysCtrl();
+
+    InitGpio();
+    EALLOW; 
+    GpioCtrlRegs.GPAMUX1.bit.GPIO0 = 1;     //PWM1A'nın pinini aç   pin 80
+    GpioCtrlRegs.GPAPUD.bit.GPIO0 = 1;      //Pull up disable
+    EDIS;
+
+    initPWM1();
+
+    for(;;);
+}
+
+void initPWM1(void){
+EALLOW;
+EPwm1Regs.TBCTL.bit.FREE_SOFT = 0;      //Free modda çalıştır
+EPwm1Regs.TBCTL.bit.CTRMODE = 0;        //Up count mode
+EPwm1Regs.TBCTL.bit.HSPCLKDIV = 0;      //SYSCLKOUT frekansını bölme => /1
+EPwm1Regs.TBCTL.bit.PRDLD = 0;          //SHADOW register kullan
+EPwm1Regs.TBCTL.bit.CLKDIV = 6;         //SYSCLKOUT frekansını 64'e böl => /64
+
+
+EPwm1Regs.TBPRD = 15624;                //Periyot 15625 ayarlandı. 15624*6 = 1.000.000 yani 100hz ayarlamış olduk
+
+EPwm1Regs.CMPCTL.bit.SHDWAMODE = 0;     //CMPA için shadow mode açtık
+EPwm1Regs.CMPCTL.bit.LOADAMODE = 0;     //TBCLK 0'landığını CMPA'yı tekrar yükle
+
+EPwm1Regs.CMPA.bit.CMPA = 7812;         //Duty cycle %50 olması için cmpa periyodun yarısı yaptık
+
+EPwm1Regs.AQCTLA.bit.ZRO = 2;           //TBCLK sıfırlandığında pini HIGH yap
+EPwm1Regs.AQCTLA.bit.CAU = 1;           //CMPA yukarı sayarken TBCLK'ya eşit olursa pini LOW yap
+EDIS;
+}

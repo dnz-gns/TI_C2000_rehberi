@@ -1,0 +1,71 @@
+#include "f28x_project.h"
+
+__interrupt void cpu_timer0_isr(void);
+
+void initTimer0(void);
+
+void main(void){
+
+    InitSysCtrl();
+
+    DINT;   //Global interruptları sistemi konfigüre etmeden önce kapat
+    
+    InitPieCtrl();
+    
+    EALLOW;
+    IER = 0x0000;
+    IFR = 0x0000;
+    EDIS;
+
+    InitPieVectTable();
+
+    InitGpio();
+
+    EALLOW; 
+    GpioCtrlRegs.GPAMUX1.bit.GPIO5 = 0;     
+    GpioCtrlRegs.GPAGMUX1.bit.GPIO5 = 0;       //Pini GPIO moduna aldık,   pin 35
+    GpioCtrlRegs.GPADIR.bit.GPIO5 = 1;         //Pinin yönü OUTPUT olarak ayarla
+    GpioCtrlRegs.GPAPUD.bit.GPIO5 = 1;         //Pull up disable
+    EDIS;
+
+    EALLOW;
+    PieVectTable.TIMER0_INT = &cpu_timer0_isr;  //Timer 0 interrupt oluşturduğunda PIE modülüne ben nereye gidecem diye soran 
+    EDIS;                                       //CPU'ya gösterilecek adresi seç(interrupt fonksiyonumuz)
+
+    EALLOW;
+    PieCtrlRegs.PIEIER1.bit.INTx7 = 1;    //1. grubun 7. üyesinin vektör tablosunun kullanılmasına izin ver
+    EDIS;
+
+    EALLOW;
+    IER |= M_INT1;    //1. grubun interrupt'larına izin ver(Timer 0 için)
+    EDIS;
+
+    initTimer0();
+
+    EALLOW;
+    CpuSysRegs.PCLKCR0.bit.CPUTIMER0 = 1;   //Timer0'a SYSCLKOUT frekansının gelmesine izin ver
+    EDIS;
+
+    EINT;   //Global interruptları aç
+
+    for(;;);  //Sonsuz döngü
+}
+
+void initTimer0(void){
+    EALLOW;
+    CpuTimer0Regs.PRD.all = 100;     //Timer0 100'e kadar sayacak, periyodunu 100 yaptık
+    CpuTimer0Regs.TPR.bit.TDDR = 0;  //Timer0 modülünü buraya girdiğimiz değer + 1'e böler. Yani bölmeyeceğiz
+    CpuTimer0Regs.TCR.bit.TRB = 1;   //Timer0'ın periyoda kadar saydıktan sonra sıfırlanmasını sağlar
+    CpuTimer0Regs.TCR.bit.TIE = 1;   //Timer0 0 olduğu zaman interrupt oluştruracak
+    EDIS;
+}
+
+void cpu_timer0_isr(void){
+    EALLOW;
+    GpioDataRegs.GPATOGGLE.bit.GPIO5 = 1;   //Pinin gerilimini ters çevir,  0 ise 3.3V, 3.3V ise 0 yap
+
+    //Bayrak temizliği
+    CpuTimer0Regs.TCR.bit.TIF = 1;          //Timer0 interrupt bayrağını kaldır
+    PieCtrlRegs.PIEACK.bit.ACK1 = 1;        //ACK1 bayrağını kaldır.
+    EDIS;
+}

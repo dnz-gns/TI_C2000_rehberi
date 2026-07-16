@@ -1,0 +1,18 @@
+#include "f28x_project.h"
+
+void main(void){
+
+    InitSysCtrl();
+
+    InitGpio();
+    
+    EALLOW; 
+    GpioCtrlRegs.GPAMUX1.bit.GPIO5 = 0;     
+    GpioCtrlRegs.GPAGMUX1.bit.GPIO5 = 0;       //Pini GPIO moduna aldık,   pin 35
+    GpioCtrlRegs.GPADIR.bit.GPIO5 = 1;         //Pinin yönü OUTPUT olarak ayarla
+    GpioCtrlRegs.GPAPUD.bit.GPIO5 = 1;         //Pull up disable
+    GpioDataRegs.GPASET.bit.GPIO5 = 1;         //Pini HIGH(3.3V) yap
+    EDIS;
+
+    for(;;);  //Sonsuz döngü
+}

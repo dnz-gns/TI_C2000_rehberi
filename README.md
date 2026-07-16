@@ -1,2 +1,2 @@
-# TI-c2000-f280049c-rehber
-Texas Instruments C2000 kartlarının çalışma mantığını, nasıl ve ne için kullanıldığını çok detaylıca anlatan türkçe bir rehber ve örnek uygulama kodları.
+"project_stradale" klasörü kodların çalışması için gerekli dosyaları ve konfigürasyonları barındırır. bu klasörü CCS'deki explorer(sol en üst) sekmesine sürükleyerek atabilirsiniz.
+"examples" klasöründeki .txt uzantılı kodlardan kullanmak istediğinizi project_stradale içindeki "main_code.c" isimli dosyanın içine kopyalayıp çalıştırın.

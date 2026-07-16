@@ -1,0 +1,63 @@
+
+
+//Tek bir ADC çekirdeği kullanarak 2MHz frekansında okuma yapar         ADC pinleri 30 ve 70
+
+
+#include "f28x_project.h"
+
+void initPWM1(void);
+void initADCA(void);
+
+
+void main(void){
+    InitSysCtrl();
+
+    initPWM1();
+    initADCA();
+
+    for(;;);
+}
+
+
+void initPWM1(void){
+EALLOW;
+//1MHz PWM çalışması için gereken ayarlar
+EPwm1Regs.TBCTL.bit.FREE_SOFT = 0;      //Free modda çalıştır
+EPwm1Regs.TBCTL.bit.CTRMODE = 0;        //Up count mode
+EPwm1Regs.TBCTL.bit.HSPCLKDIV = 0;      //SYSCLKOUT frekansını bölme => /1
+EPwm1Regs.TBCTL.bit.PRDLD = 0;          //SHADOW register kullan
+
+EPwm1Regs.TBPRD = 50;                 //2MHz çalış(kart maksimum 3.5MHz civarında okuyabiliyor)
+
+EPwm1Regs.CMPCTL.bit.SHDWAMODE = 0;     //CMPA için shadow mode açtık
+EPwm1Regs.CMPCTL.bit.LOADAMODE = 0;     //TBCLK 0'landığını CMPA'yı tekrar yükle
+
+EPwm1Regs.CMPA.bit.CMPA = 25;          //Duty cycle %50 olması için cmpa periyodun yarısı yaptık
+
+EPwm1Regs.AQCTLA.bit.ZRO = 0;           //TBCLK sıfırlandığında hiçbir şey yapma
+EPwm1Regs.AQCTLA.bit.CAU = 0;           //CMPA yukarı sayarken TBCLK'ya eşit olursa hiçbir şey yapma
+
+//ADC'ye SOCA başlatmak için gereken ayarlar
+EPwm1Regs.ETSEL.bit.SOCAEN = 0;         //SOCA oluşturmaya izin VERME
+EPwm1Regs.ETSEL.bit.SOCASEL = 2;        //TBCLK TBPRD'ye eşit olduğunda event(SOCA start sinyali) oluştur
+EPwm1Regs.ETPS.bit.SOCAPRD = 1;         //Her SOCA üretme isteğinde SOC üret
+EPwm1Regs.ETSEL.bit.SOCAEN = 1;         //SOCA oluşturmaya izin VER
+EDIS;
+}
+
+
+
+void initADCA(void){
+SetVREF(ADC_ADCA, ADC_INTERNAL,0);      //ADC çalışması için gerekli ön ayarları yapar
+EALLOW;
+AdcaRegs.ADCCTL1.bit.ADCPWDNZ = 1;      //ADC'ye enerji gitmesini sağla
+DELAY_US(1000);                         //ADC  çalışmaya başlayana kadar bekle
+AdcaRegs.ADCCTL2.bit.PRESCALE = 2;      //SYSCLKOUT frekansını 2'ye böler
+
+AdcaRegs.ADCSOC0CTL.bit.CHSEL = 0;      //ADCIN0 tetiklensin
+AdcaRegs.ADCSOC0CTL.bit.ACQPS = 7;      //7 saat döngüsü boyunca kapasitörü doldur(kesinlikle yeterli denendi)
+AdcaRegs.ADCSOC0CTL.bit.TRIGSEL = 5;    //ePWM1, ADCSOCA tarafından tetiklensin
+
+AdcaRegs.ADCSOCPRICTL.bit.SOCPRIORITY = 1; //SOC0 ve SOC1 high priority modunda, diğerleri round robinde
+EDIS;
+}

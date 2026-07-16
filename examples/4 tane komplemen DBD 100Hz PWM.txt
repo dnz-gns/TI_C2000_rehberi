@@ -1,0 +1,116 @@
+#include "f28x_project.h"
+
+//fonksiyon ön tanımlamaları
+void initPWM1(void);
+void initPWM2(void);
+
+
+void main(void){
+
+    InitSysCtrl();
+
+    InitGpio();
+
+    //GPIO Ayarları
+    EALLOW;
+    GpioCtrlRegs.GPAMUX1.bit.GPIO0 = 1;
+    GpioCtrlRegs.GPAPUD.bit.GPIO0 = 1;
+
+    GpioCtrlRegs.GPAMUX1.bit.GPIO1 = 1;
+    GpioCtrlRegs.GPAPUD.bit.GPIO1 = 1;
+    
+    GpioCtrlRegs.GPAMUX1.bit.GPIO2 = 1;
+    GpioCtrlRegs.GPAPUD.bit.GPIO2 = 1;
+
+    GpioCtrlRegs.GPAMUX1.bit.GPIO3 = 1;
+    GpioCtrlRegs.GPAPUD.bit.GPIO3 = 1;
+    EDIS;
+
+
+    EALLOW;
+    CpuSysRegs.PCLKCR0.bit.TBCLKSYNC = 0;       //Senkronizasyonu PWM konfigürasyonları yapmadan önce kapat
+    EDIS;
+
+    initPWM1();
+    initPWM2();
+
+    EALLOW;
+    CpuSysRegs.PCLKCR0.bit.TBCLKSYNC = 1;       //Senkronizasyon sinyalini gönder
+    EDIS;
+
+    for(;;);
+}
+
+
+void initPWM1(void){
+EALLOW;
+//100hz PWM çalışması için gereken ayarlar
+EPwm1Regs.TBCTL.bit.FREE_SOFT = 0;      //Soft modda çalıştır
+EPwm1Regs.TBCTL.bit.CTRMODE = 0;        //Up count mode
+EPwm1Regs.TBCTL.bit.HSPCLKDIV = 0;      //SYSCLKOUT frekansını bölme => /1
+EPwm1Regs.TBCTL.bit.PRDLD = 0;          //SHADOW register kullan
+EPwm1Regs.TBCTL.bit.CLKDIV = 6;         //SYSCLKOUT frekansını 64'e böl => /64
+
+EPwm1Regs.TBPRD = 15624;                //Periyot 15625 ayarlandı. 15624*6 = 1.000.000 yani 100hz ayarlamış olduk
+
+EPwm1Regs.CMPCTL.bit.SHDWAMODE = 0;     //CMPA için shadow mode açtık
+EPwm1Regs.CMPCTL.bit.LOADAMODE = 0;     //TBCLK 0'landığında CMPA'yı tekrar yükle
+
+EPwm1Regs.CMPA.bit.CMPA = 7813;         //Duty cycle %50 olması için cmpa periyodun yarısı yaptık
+EPwm1Regs.CMPB.bit.CMPB = 7813;         //Duty cycle %50 olması için cmpa periyodun yarısı yaptık
+
+EPwm1Regs.AQCTLA.bit.ZRO = 2;           //0=OFF, 1=LOW, 2=HIGH, 3=TOGGLE
+EPwm1Regs.AQCTLA.bit.CAU = 1;           //0=OFF, 1=LOW, 2=HIGH, 3=TOGGLE
+
+EPwm1Regs.AQCTLB.bit.ZRO = 2;           //0=OFF, 1=LOW, 2=HIGH, 3=TOGGLE
+EPwm1Regs.AQCTLB.bit.CBU = 1;           //0=OFF, 1=LOW, 2=HIGH, 3=TOGGLE
+
+
+//DBD ayarları
+EPwm1Regs.DBCTL.bit.OUT_MODE = 3;       //Hem RED hem de FED açık
+EPwm1Regs.DBCTL.bit.IN_MODE = 2;        //EPWM2A'yı hem RED hem de FED için kullan
+EPwm1Regs.DBCTL.bit.POLSEL = 2;         //ePWMB invert edilecek
+EPwm1Regs.DBRED.bit.DBRED = 1;          //1 saat döngüsü bekle
+EPwm1Regs.DBFED.bit.DBFED = 1;          //1 saat döngüsü bekle
+
+EPwm1Regs.TBCTL.bit.PHSEN = 0;
+EPwm1Regs.TBCTL.bit.SYNCOSEL = 1;
+EDIS;
+
+}
+
+
+void initPWM2(void){
+EALLOW;
+//100hz PWM çalışması için gereken ayarlar
+EPwm2Regs.TBCTL.bit.FREE_SOFT = 0;      //Soft modda çalıştır
+EPwm2Regs.TBCTL.bit.CTRMODE = 0;        //Up count mode
+EPwm2Regs.TBCTL.bit.HSPCLKDIV = 0;      //SYSCLKOUT frekansını bölme => /1
+EPwm2Regs.TBCTL.bit.PRDLD = 0;          //SHADOW register kullan
+EPwm2Regs.TBCTL.bit.CLKDIV = 6;         //SYSCLKOUT frekansını 64'e böl => /64
+
+EPwm2Regs.TBPRD = 15624;                //Periyot 15625 ayarlandı. 15624*6 = 1.000.000 yani 100hz ayarlamış olduk
+
+EPwm2Regs.CMPCTL.bit.SHDWAMODE = 0;     //CMPA için shadow mode açtık
+EPwm2Regs.CMPCTL.bit.LOADAMODE = 0;     //TBCLK 0'landığında CMPA'yı tekrar yükle
+
+EPwm2Regs.CMPA.bit.CMPA = 7813;         //Duty cycle %50 olması için cmpa periyodun yarısı yaptık
+EPwm2Regs.CMPB.bit.CMPB = 7813;         //Duty cycle %50 olması için cmpa periyodun yarısı yaptık
+
+EPwm2Regs.AQCTLA.bit.ZRO = 2;           //0=OFF, 1=LOW, 2=HIGH, 3=TOGGLE
+EPwm2Regs.AQCTLA.bit.CAU = 1;           //0=OFF, 1=LOW, 2=HIGH, 3=TOGGLE
+
+EPwm2Regs.AQCTLB.bit.ZRO = 2;           //0=OFF, 1=LOW, 2=HIGH, 3=TOGGLE
+EPwm2Regs.AQCTLB.bit.CBU = 1;           //0=OFF, 1=LOW, 2=HIGH, 3=TOGGLE
+
+
+//DBD ayarları
+EPwm2Regs.DBCTL.bit.OUT_MODE = 3;       //Hem RED hem de FED açık
+EPwm2Regs.DBCTL.bit.IN_MODE = 2;        //EPWM2A'yı hem RED hem de FED için kullan
+EPwm2Regs.DBCTL.bit.POLSEL = 2;         //ePWMB invert edilecek
+EPwm2Regs.DBRED.bit.DBRED = 1;          //1 saat döngüsü bekle
+EPwm2Regs.DBFED.bit.DBFED = 1;          //1 saat döngüsü bekle
+
+EPwm2Regs.TBCTL.bit.PHSEN = 1;          //PWM1'den gelen syc sinyalini kabul et
+EPwm2Regs.TBPHS.bit.TBPHS = 1;          //Sinyal geldiğinde TBCTR'yi 1'den başlat
+}
